@@ -1,0 +1,101 @@
+{
+  "Ch_element1": false,
+  "Ch_element2": false,
+  "Ch_element3": null,
+  "Ch_element4": 0,
+  "Ch_element5": 1335348000000,
+  "Ch_element6": false,
+  "Ch_element7": 0,
+  "Ch_element8": 0,
+  "Ch_element9": 0,
+  "Ch_element10": [
+    "Local Channels"
+  ],
+  "Ch_element11": 1000,
+  "Ch_element12": "1000_1335348000000",
+  "Ch_element13": 0,
+  "Ch_element14": [
+    {
+      "Ch_element14_1": 1000,
+      "Ch_element14_2": "PAD_1000_2012-04-25 10:00:00.000",
+      "Ch_element14_3": 2147483647000,
+      "Ch_element14_4": "01432E00002020202020202003001E001F002000013401412438030800DF38030B020C25040362450098032AF8FF",
+      "Ch_element14_5": 1335348000000
+    }
+  ],
+  "Ch_element15": [
+    {
+      "Ch_element15_1": 2147483647000,
+      "Ch_element15_2": 25157,
+      "Ch_element15_3": 1335348000000
+    }
+  ],
+  "Ch_element16": "SLL",
+  "Ch_element17": "M2",
+  "Ch_element18": 886,
+  "Ch_element19": null,
+  "Ch_element20": 0,
+  "Ch_element21": null,
+  "Ch_element22": false,
+  "Ch_element23": false,
+  "Ch_element24": "from  New York, NY",
+  "Ch_element25": "0",
+  "Ch_element26": 0,
+  "Ch_element27": false,
+  "Ch_element28": 0,
+  "Ch_element29": 2147483647000,
+  "Ch_element30": 0,
+  "Ch_element31": 0,
+  "Ch_element32": null,
+  "Ch_element33": true,
+  "Ch_element34": false,
+  "Ch_element35": false,
+  "Ch_element36": null,
+  "Ch_element37": null,
+  "Ch_element38": "N",
+  "Ch_element39": 22,
+  "Ch_element40": "New York WNET 13 PBS",
+  "Ch_element41": 13,
+  "Ch_element42": 501,
+  "Ch_element43": null,
+  "Ch_element44": null,
+  "Ch_element45": [
+    "PBS"
+  ],
+  "Ch_element46": null,
+  "Ch_element47": null,
+  "Ch_element48": false,
+  "Ch_element49": false,
+  "Ch_element50": false,
+  "Ch_element51": 0,
+  "Ch_element52": false,
+  "Ch_element53": null,
+  "Ch_element54": null,
+  "Ch_element55": " Digital",
+  "Ch_element56": 64,
+  "Ch_element57": "WNET",
+  "Ch_element58": 11715,
+  "Ch_element59": 11715,
+  "Ch_element60": [
+    11039
+  ],
+  "Ch_element61": [
+    "Ch_element61_1:ny13.ch"
+  ],
+  "Ch_element62": [
+    {
+      "Ch_element62_1": 79040,
+      "Ch_element62_2": "PBS",
+      "Ch_element62_3": null,
+      "Ch_element62_4": "Grouping",
+      "Ch_element62_5": 79040,
+      "Ch_element62_6": null,
+      "Ch_element62_7": 22
+    }
+  ],
+  "Ch_element63": false,
+  "Ch_element64": null,
+  "Ch_element65": false,
+  "Ch_element66": "2015082007:25:05.486",
+  "Ch_element67": "ChDao_"
+}
