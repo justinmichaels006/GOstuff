@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/couchbaselabs/gocb"
+	"gopkg.in/couchbase/gocb.v1"
 	"fmt"
 	"os"
 	"bufio"
@@ -15,8 +15,8 @@ func checker(e error) {
 
 func main() {
 
-myC, _ := gocb.Connect("couchbase://10.111.94.102")
-myB, _ := myC.OpenBucket("testload", "")
+	myC, _ := gocb.Connect("couchbase://10.111.94.102")
+	myB, _ := myC.OpenBucket("testload", "")
 
 	//Account Reader
 	f, err := os.OpenFile("/Users/justin/Documents/SVB/SVBaccounts.json", os.O_RDONLY, 0600)
@@ -27,6 +27,7 @@ myB, _ := myC.OpenBucket("testload", "")
 		//fmt.Println(scanner.Text()) // Println will add back the final '\n'
 		var myDoc interface{}
 		custID := scanner.Text()
+		custID = ("CUST::" + custID)
 		myB.Get(custID, &myDoc)
 		fmt.Println(custID)
 	}
