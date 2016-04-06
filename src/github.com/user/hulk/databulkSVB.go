@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/couchbaselabs/gocb"
+	"gopkg.in/couchbase/gocb.v1"
 	"fmt"
 	//"strconv"
 	"sync"
@@ -14,7 +14,7 @@ import (
 
 func main() {
 
-	myCluster, _ := gocb.Connect("couchbase://192.168.99.100:8091")
+	myCluster, _ := gocb.Connect("couchbase://10.111.94.102")
 	myBucket, _ := myCluster.OpenBucket("testload", "")
 
 	// read whole the file
@@ -51,7 +51,7 @@ func main() {
 		os.Exit(54)
 	}
 
-	messages := make(chan int)
+	//messages := make(chan int)
 	var wg sync.WaitGroup
 
 	wg.Add(1)
@@ -112,7 +112,7 @@ func SVBLoad(jsonACCT map[string]interface{}, jsonCUST map[string]interface{}, m
 
 	fmt.Println("Wait Group Done ...")
 	defer f.Close()
-	//defer sync.WaitGroup{}.Done()
+	//defer sync.WaitGroup.Done()
 	return
 }
 
