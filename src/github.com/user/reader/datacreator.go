@@ -12,13 +12,16 @@ func FlowControl(number int, jsonACCT map[string]interface{}, jsonCUST map[strin
 
 	if number == 0 {
 
-		fmt.Println("Done: ", number)
-		return number
+		if number == 0 {
+			fmt.Println("Done: ", number)
+			go finish()
+		}
 	}
 
 	//go upsertOne(number, jsonACCT, jsonCUST, myBucket)
 	str := strconv.Itoa(number)
 	fmt.Println("Upsert: ", str)
+	
 	myBucket.Upsert("ACCT::"+str, jsonACCT, 0)
 	myBucket.Upsert("CUST::"+str, jsonCUST, 0)
 
@@ -40,7 +43,7 @@ func main() {
 	//var getSetPercentage = 0.99;
 	//var totalDocs = 10000;
 	var currentGroup = 0;
-	var opsGroups = 50;
+	var opsGroups = 50000;
 	var runningLoad = false;
 
 	// Connect to Couchbase
@@ -74,9 +77,6 @@ func main() {
 	if (runningLoad == false && currentGroup == 0) {
 		flowOutput := FlowControl(opsGroups, docACCT, docCUST, myB)
 		fmt.Println("Recursive: ", flowOutput)
-		if flowOutput == 0 {
-			go finish()
-		}
 	}
 }
 
