@@ -6,26 +6,29 @@ import (
 	"os"
 	"encoding/json"
 	"strconv"
+	"time"
 )
 
-func FlowControl(number int, jsonACCT map[string]interface{}, jsonCUST map[string]interface{}, myBucket *gocb.Bucket) int {
+func FlowControl(controller bool, number int, jsonACCT map[string]interface{}, jsonCUST map[string]interface{}, myBucket *gocb.Bucket) int {
 
 	if number == 0 {
-
-		if number == 0 {
-			fmt.Println("Done: ", number)
-			go finish()
-		}
+		fmt.Println("Done: ", number)
+		go finish()
 	}
 
 	//go upsertOne(number, jsonACCT, jsonCUST, myBucket)
 	str := strconv.Itoa(number)
 	fmt.Println("Upsert: ", str)
-	
+
+	now := time.Now()
+	nanos := now.UnixNano()
+	millis := nanos / 1000000
+	jsonACCT["upStamp"] = millis
+	jsonCUST["upStamp"] = millis
 	myBucket.Upsert("ACCT::"+str, jsonACCT, 0)
 	myBucket.Upsert("CUST::"+str, jsonCUST, 0)
 
-	return number + FlowControl(number-1, jsonACCT, jsonCUST, myBucket)
+	return number + FlowControl(controller, number-1, jsonACCT, jsonCUST, myBucket)
 }
 
 /*func upsertOne(num int, jsonACCT map[string]interface{}, jsonCUST map[string]interface{}, myBucket *gocb.Bucket) {
@@ -43,7 +46,7 @@ func main() {
 	//var getSetPercentage = 0.99;
 	//var totalDocs = 10000;
 	var currentGroup = 0;
-	var opsGroups = 50000;
+	var opsGroups = 50;
 	var runningLoad = false;
 
 	// Connect to Couchbase
@@ -73,10 +76,10 @@ func main() {
 		os.Exit(53)
 	}
 
-
 	if (runningLoad == false && currentGroup == 0) {
-		flowOutput := FlowControl(opsGroups, docACCT, docCUST, myB)
-		fmt.Println("Recursive: ", flowOutput)
+		FlowControl(runningLoad, opsGroups, docACCT, docCUST, myB)
+		// flowOutput :=
+		// fmt.Println("Recursive: ", flowOutput)
 	}
 }
 
