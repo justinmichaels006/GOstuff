@@ -48,13 +48,16 @@ func main() {
 	var currentGroup = 0;
 	var opsGroups = 50;
 	var runningLoad = false;
+	var seedNode string
+	// holds the arguments for Couchbase seed node
+	seedNode = ("couchbase://" + os.Args[1])
 
 	// Connect to Couchbase
-	myC, _ := gocb.Connect("couchbase://10.111.94.102")
+	myC, _ := gocb.Connect(seedNode)
 	myB, _ := myC.OpenBucket("testload", "")
 
 	// read whole the file
-	tmpACCT, err := os.OpenFile("/Users/justin/Documents/SVB/ACCT.json", os.O_RDONLY, 0644)
+	tmpACCT, err := os.OpenFile("/tmp/ACCT.json", os.O_RDONLY, 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -65,7 +68,7 @@ func main() {
 		os.Exit(52)
 	}
 
-	tmpCUST, err := os.OpenFile("/Users/justin/Documents/SVB/CUST.json", os.O_RDONLY, 0644)
+	tmpCUST, err := os.OpenFile("/tmp/CUST.json", os.O_RDONLY, 0644)
 	if err != nil {
 		panic(err)
 	}
