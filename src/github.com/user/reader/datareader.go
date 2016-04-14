@@ -58,7 +58,11 @@ func getOne(val string, myBucket *gocb.Bucket, ch chan bool) { //(bool, error)
 
 func main() {
 
-	myC, _ := gocb.Connect("couchbase://10.111.94.102")
+	var seedNode string
+	// holds the arguments for Couchbase seed node
+	seedNode = ("couchbase://" + os.Args[1])
+
+	myC, _ := gocb.Connect(seedNode)
 	myB, _ := myC.OpenBucket("testload", "")
 
 	var opsGroups = 5
