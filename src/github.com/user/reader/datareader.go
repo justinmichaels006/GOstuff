@@ -20,21 +20,18 @@ func checker(e error) {
 // Shut down.
 func done() {
 	fmt.Println("Good Bye")
-	os.Exit(101)
+	os.Exit(111)
 }
 
 func getOne(val string, myBucket *gocb.Bucket, ch chan bool) { //(bool, error)
 
 	var err error
-	//var status bool
-	//var itemsGet []gocb.BulkOp
 	var theDoc map[string]interface{}
 
 	// Retrieve Document
 	_, err = myBucket.Get(val, &theDoc)
 	if err != nil {
 		fmt.Println("Doh! ", val)
-		//status = false
 		getOne(val, myBucket, ch)
 	}
 	if err == nil {
@@ -47,8 +44,6 @@ func getOne(val string, myBucket *gocb.Bucket, ch chan bool) { //(bool, error)
 		theDoc["getStamp"] = millis
 		myBucket.Upsert(val, theDoc, 0)
 		fmt.Println("Got It:", val)
-		//status = true
-		ch <- true
 		return
 	}
 
@@ -91,7 +86,10 @@ func main() {
 	i++
 	}
 
-	<-ch
-	go done()
+	if opsGroups == 0 + <-ch {
+		fmt.Println("Done: ", ch)
+		go done()
+	}
+
 }
 
