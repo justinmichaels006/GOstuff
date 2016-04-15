@@ -23,15 +23,20 @@ func done() {
 	os.Exit(111)
 }
 
-func getOne(val string, myBucket *gocb.Bucket, ch chan bool) { //(bool, error)
+func getOne(val int, myBucket *gocb.Bucket, ch chan bool) { //(bool, error)
 
 	var err error
 	var theDoc map[string]interface{}
 
+	str := strconv.Itoa(val)
+	//var rtnValue bool
+	var key string
+
+	key = ("ACCT::"+str)
 	// Retrieve Document
-	_, err = myBucket.Get(val, &theDoc)
+	_, err = myBucket.Get(key, &theDoc)
 	if err != nil {
-		fmt.Println("Doh! ", val)
+		fmt.Println("Doh! ", str)
 		getOne(val, myBucket, ch)
 	}
 	if err == nil {
@@ -42,8 +47,12 @@ func getOne(val string, myBucket *gocb.Bucket, ch chan bool) { //(bool, error)
 		nanos := now.UnixNano()
 		millis := nanos / 1000000
 		theDoc["getStamp"] = millis
-		myBucket.Upsert(val, theDoc, 0)
-		fmt.Println("Got It:", val)
+		myBucket.Upsert(str, theDoc, 0)
+		fmt.Println("Got It:", str)
+		return
+	}
+	if val == 0 {
+		ch <- true
 		return
 	}
 
@@ -66,16 +75,10 @@ func main() {
 
 	for i < opsGroups {
 
-		str := strconv.Itoa(i)
-		//var rtnValue bool
-		var key string
-
-		key = ("ACCT::"+str)
-
-		go getOne(key, myB, ch)
+		go getOne(opsGroups, myB, ch)
 
 		//One way to do it
-/*		err := try.Do(func(attempt int) (bool, error) {
+		/*err := try.Do(func(attempt int) (bool, error) {
 			var err error
 			rtnValue, err = getOne(key, myB)
 			return attempt < 5, err // try 5 times
@@ -86,7 +89,7 @@ func main() {
 	i++
 	}
 
-	if opsGroups == 0 + <-ch {
+	if <-ch {
 		fmt.Println("Done: ", ch)
 		go done()
 	}
