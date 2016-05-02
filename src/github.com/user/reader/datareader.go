@@ -23,7 +23,13 @@ func done() {
 	os.Exit(111)
 }
 
-func getOne(val int, myBucket *gocb.Bucket, ch chan bool) { //(bool, error)
+func getOne(val int, myBucket *gocb.Bucket, ch chan bool) int {
+
+	if val == 0 {
+		/*fmt.Println("Done: ", ch)
+		go done()*/
+		ch <- true
+	}
 
 	var err error
 	var theDoc map[string]interface{}
@@ -36,27 +42,22 @@ func getOne(val int, myBucket *gocb.Bucket, ch chan bool) { //(bool, error)
 	// Retrieve Document
 	_, err = myBucket.Get(key, &theDoc)
 	if err != nil {
-		fmt.Println("Doh! ", str)
-		getOne(val, myBucket, ch)
-	}
-	if err == nil {
-		//itemsGet = append(itemsGet, &gocb.GetOp{Key: val, Value: &theDoc{}})
-		//Add time stamp for when this occured
-		//Update log file? or maybe the doc itself
-		now := time.Now()
-		nanos := now.UnixNano()
-		millis := nanos / 1000000
-		theDoc["getStamp"] = millis
-		myBucket.Upsert(str, theDoc, 0)
-		fmt.Println("Got It:", str)
-		return
-	}
-	if val == 0 {
-		ch <- true
-		return
+		fmt.Println("Doh! ", key)
+		//time.Sleep(100000)
+		return getOne(val, myBucket, ch)
 	}
 
-	//return status, err
+	now := time.Now()
+	nanos := now.UnixNano()
+	millis := nanos / 1000000
+	theDoc["getStamp"] = millis
+	myBucket.Upsert(key, theDoc, 0)
+
+	myBucket.Get(key, &theDoc)
+	endTime := theDoc["getStamp"]
+	startTime := theDoc["upStamp"]
+	fmt.Println("Got It:", key, endTime, startTime)
+	return val + getOne(val-1, myBucket, ch)
 
 }
 
@@ -67,15 +68,16 @@ func main() {
 	seedNode = ("couchbase://" + os.Args[1])
 
 	myC, _ := gocb.Connect(seedNode)
-	myB, _ := myC.OpenBucket("testload", "")
+	myB, _ := myC.OpenBucket("default", "")
 
-	var opsGroups = 5
-	var i = 0
+	var opsGroups = 50
 	ch := make(chan bool)
 
-	for i < opsGroups {
-
+	for opsGroups <= 50 && opsGroups >0 {
+		fmt.Println("got here")
 		go getOne(opsGroups, myB, ch)
+		opsGroups = opsGroups - 1
+	}
 
 		//One way to do it
 		/*err := try.Do(func(attempt int) (bool, error) {
@@ -86,10 +88,9 @@ func main() {
 		/*if err != nil {
 			log.Fatalln("error:", err)
 		}*/
-	i++
-	}
 
-	if <-ch {
+	<-ch
+	if <-ch == true {
 		fmt.Println("Done: ", ch)
 		go done()
 	}

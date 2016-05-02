@@ -54,7 +54,7 @@ func main() {
 
 	// Connect to Couchbase
 	myC, _ := gocb.Connect(seedNode)
-	myB, _ := myC.OpenBucket("testload", "")
+	myB, _ := myC.OpenBucket("default", "")
 
 	// read whole the file
 	tmpACCT, err := os.OpenFile("/tmp/ACCT.json", os.O_RDONLY, 0644)
@@ -81,8 +81,6 @@ func main() {
 
 	if (runningLoad == false && currentGroup == 0) {
 		FlowControl(runningLoad, opsGroups, docACCT, docCUST, myB)
-		// flowOutput :=
-		// fmt.Println("Recursive: ", flowOutput)
 	}
 }
 
