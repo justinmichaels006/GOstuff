@@ -6,9 +6,8 @@ import (
 "os"
 "encoding/json"
 "strconv"
-"time"
-	"io"
-	"crypto/rand"
+"io"
+"crypto/rand"
 )
 
 func main() {
