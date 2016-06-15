@@ -15,7 +15,6 @@ func main() {
 	// Configuration
 	// 1 Customer -> 800 to 1200 Groups -> 40 to 80 Devices -> 70 to 200 App
 	// 10,000 Customers -> 1M Groups -> 50M Devices -> 2B App
-	var currentGroup = 0;
 	var cusomterTotal = 2;
 	var groupTotal = cusomterTotal * 1000
 	var deviceTotal = groupTotal * 50
@@ -24,7 +23,7 @@ func main() {
 	var itemGroups []gocb.BulkOp
 	var itemDevice []gocb.BulkOp
 	var itemApp []gocb.BulkOp
-	var runningLoad = false
+	//var runningLoad = false
 	var seedNode string
 	// holds the arguments for Couchbase seed node
 	//seedNode = ("couchbase://" + os.Args[1])
