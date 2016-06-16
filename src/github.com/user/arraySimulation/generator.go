@@ -1,13 +1,14 @@
 package main
 
 import (
-"gopkg.in/couchbase/gocb.v1"
-"fmt"
-"os"
-"encoding/json"
-"strconv"
-"io"
-"crypto/rand"
+	"gopkg.in/couchbase/gocb.v1"
+	"fmt"
+	"os"
+	"encoding/json"
+	"strconv"
+	"io"
+	"crypto/rand"
+	"bufio"
 )
 
 func main() {
@@ -27,13 +28,13 @@ func main() {
 	var seedNode string
 	// holds the arguments for Couchbase seed node
 	//seedNode = ("couchbase://" + os.Args[1])
-	seedNode = ("couchbase://" + "127.0.0.1")
+	seedNode = ("couchbase://" + "192.168.61.101")
 
 	// Connect to Couchbase
 	myC, _ := gocb.Connect(seedNode)
-	myB, _ := myC.OpenBucket("streamer", "")
+	myB, _ := myC.OpenBucket("testload", "")
 
-	// Read the Greoup file
+	// Read the Group file
 	tmpGROUP, err := os.OpenFile("/Users/justin/Documents/Symantec/sampledata/GROUP.json", os.O_RDONLY, 0644)
 	if err != nil {
 		panic(err)
@@ -67,11 +68,26 @@ func main() {
 		os.Exit(54)
 	}
 
+	tmpCUST, err := os.OpenFile("/Users/justin/Documents/Symantec/sampledata/stocks.json", os.O_RDONLY, 0644)
+	if err != nil {
+		fmt.Printf("error opening file: %v\n",err)
+		os.Exit(55)
+	}
+	sc := bufio.NewScanner(tmpCUST)
+	for sc.Scan() {
+
+	}
+	if err := sc.Err(); err != nil {
+		fmt.Printf("error opening file: %v\n",err)
+		os.Exit(55)
+	}
+
 	for x := cusomterTotal; x != 0; x-- {
 		// Create the Customer that will anchor the rest of the relationships
 		uuid, err := newUUID()
 
-		var appArray [appTotal]string
+		//var appArray [appTotal]string
+		appArray := make([]string, appTotal)
 
 		if err != nil {
 			fmt.Printf("error: %v\n", err)
