@@ -68,7 +68,7 @@ func main() {
 		os.Exit(54)
 	}
 
-	tmpCUST, err := os.OpenFile("/Users/justin/Documents/Symantec/sampledata/stocks.json", os.O_RDONLY, 0644)
+	/*tmpCUST, err := os.OpenFile("/Users/justin/Documents/Symantec/sampledata/stocks.json", os.O_RDONLY, 0644)
 	if err != nil {
 		fmt.Printf("error opening file: %v\n",err)
 		os.Exit(55)
@@ -80,7 +80,7 @@ func main() {
 	if err := sc.Err(); err != nil {
 		fmt.Printf("error opening file: %v\n",err)
 		os.Exit(55)
-	}
+	}*/
 
 	for x := cusomterTotal; x != 0; x-- {
 		// Create the Customer that will anchor the rest of the relationships
