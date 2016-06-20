@@ -6,9 +6,8 @@ import (
 	"os"
 	"encoding/json"
 	"strconv"
-	"io"
-	"crypto/rand"
-	"bufio"
+	"math/rand"
+	"github.com/nu7hatch/gouuid"
 )
 
 func main() {
@@ -16,15 +15,18 @@ func main() {
 	// Configuration
 	// 1 Customer -> 800 to 1200 Groups -> 40 to 80 Devices -> 70 to 200 App
 	// 10,000 Customers -> 1M Groups -> 50M Devices -> 2B App
-	var cusomterTotal = 2;
-	var groupTotal = cusomterTotal * 1000
-	var deviceTotal = groupTotal * 50
-	var appTotal = deviceTotal * 100
+	//TODO: Create ranges during simulation
+	var cusomterTotal = 1 //10000;
+	var groupTotal = cusomterTotal * 2 //1000
+	var deviceTotal = 5 //50
+	var appTotal = 4 //200
+	var appCatalog = 10 //2000
 	// Create an Array of BulkOps for Insert
+	var itemCust []gocb.BulkOp
 	var itemGroups []gocb.BulkOp
 	var itemDevice []gocb.BulkOp
 	var itemApp []gocb.BulkOp
-	//var runningLoad = false
+	//var flowControl = false
 	var seedNode string
 	// holds the arguments for Couchbase seed node
 	//seedNode = ("couchbase://" + os.Args[1])
@@ -68,23 +70,29 @@ func main() {
 		os.Exit(54)
 	}
 
-	/*tmpCUST, err := os.OpenFile("/Users/justin/Documents/Symantec/sampledata/stocks.json", os.O_RDONLY, 0644)
-	if err != nil {
-		fmt.Printf("error opening file: %v\n",err)
-		os.Exit(55)
-	}
-	sc := bufio.NewScanner(tmpCUST)
-	for sc.Scan() {
+	var docCUST map[string]interface{}
+	str := `{"TYPE": "CUSTONMER", "ID": "uuid", "NUM": "x"}`
+	json.Unmarshal([]byte(str), &docCUST)
 
+	//Create Simulated App Catalog
+	for y := 0; y < appCatalog; y++ {
+		docAPP["TYPE"] = "APP"
+		itemApp = append(itemApp, &gocb.InsertOp{Key: "APP::" + strconv.Itoa(y), Value: &docAPP})
 	}
-	if err := sc.Err(); err != nil {
-		fmt.Printf("error opening file: %v\n",err)
-		os.Exit(55)
-	}*/
+	// Perform the bulk operation
+	err = myB.Do(itemApp)
+	if err != nil {
+		fmt.Println("ERRROR PERFORMING BULK INSERT:", err)
+	}
 
 	for x := cusomterTotal; x != 0; x-- {
 		// Create the Customer that will anchor the rest of the relationships
 		uuid, err := newUUID()
+
+		docCUST["TYPE"] = "CUSTOMER"
+		docCUST["ID"] = uuid
+		docCUST["NUM"] = x
+		itemCust = append(itemCust, &gocb.InsertOp{Key: uuid + "::" + strconv.Itoa(x), Value: &docCUST})
 
 		//var appArray [appTotal]string
 		appArray := make([]string, appTotal)
@@ -94,55 +102,71 @@ func main() {
 		}
 		//fmt.Printf("%s\n", uuid) // Debug
 
+		//Create Devices and Groups
 		for i := 0; i < groupTotal; i++ {
+			docGROUP["TYPE"] = "GROUP"
+			docGROUP["GROUP_id"] = uuid
 			itemGroups = append(itemGroups, &gocb.InsertOp{Key: uuid + "::GROUP::" + strconv.Itoa(i), Value: &docGROUP})
 			for j := 0; j < deviceTotal; j++ {
-				for y := 0; y < appTotal; y++ {
-					appArray[y] = uuid + "::APP::" + strconv.Itoa(y)
-				}
-					docDEVICE["APP_install"] = appArray
-					itemDevice = append(itemDevice, &gocb.InsertOp{Key: uuid + "::DEVICE::" + strconv.Itoa(j), Value: &docDEVICE})
-				for k := 0; k < appTotal; k++ {
+				docDEVICE["TYPE"] = "DEVICE"
+				for k := 0; k <= appTotal; k++ {
+					for m := 0; m < appTotal; m++ {
+						var a = rand.Intn(appCatalog)
+						// fmt.Println(a) //debug
+						appArray[m] = "APP::" + strconv.Itoa(a)
+					}
+				docDEVICE["APP_install"] = appArray
+				itemDevice = append(itemDevice, &gocb.InsertOp{Key: uuid + "::DEVICE::" + strconv.Itoa(j), Value: &docDEVICE})
+
+					//TODO: Add the catalog_app_version document
+					/*docAPP["TYPE"] = "APP"
 					itemApp = append(itemApp, &gocb.InsertOp{Key: uuid + "::APP::" + strconv.Itoa(k), Value: &docAPP})
-				}
-				// Perform the bulk operation
-				err = myB.Do(itemApp)
-				if err != nil {
+					}
+					// Perform bulk operation
+					err = myB.Do(itemApp)
+					if err != nil {
 					fmt.Println("ERRROR PERFORMING BULK INSERT:", err)
+					*/
+
 				}
 			}
-			// Perform the bulk operation
+			// Perform the DEVICE bulk operation
 			err = myB.Do(itemDevice)
 			if err != nil {
 				fmt.Println("ERRROR PERFORMING BULK INSERT:", err)
 			}
 		}
-		// Perform the bulk operation
+		// Perform the GROUP bulk operation
 		err = myB.Do(itemGroups)
 		if err != nil {
 			fmt.Println("ERRROR PERFORMING BULK INSERT:", err)
 		}
 
-	finish(myB)
+	}
+	// Perform the CUSTOMER bulk operation
+	err = myB.Do(itemCust)
+	if err != nil {
+		fmt.Println("ERRROR PERFORMING BULK INSERT:", err)
 	}
 
-	//if (runningLoad == false && currentGroup == 0) {
-	//	FlowControl(runningLoad, uuid, cusomterTotal, docGROUP, docDEVICE, docAPP, myB)
-	//}
+	finish(myB)
+
 }
 
 // newUUID generates a random UUID according to RFC 4122
 func newUUID() (string, error) {
-	uuid := make([]byte, 16)
-	n, err := io.ReadFull(rand.Reader, uuid)
-	if n != len(uuid) || err != nil {
-		return "", err
+	/*This won't work on Windows
+	out, err := exec.Command("uuidgen").Output()
+	if err != nil {
+		log.Fatal(err)
+	}*/
+	out, err := uuid.NewV4()
+	if err != nil {
+		fmt.Println("error:", err)
+		return out.String(), err
 	}
-	// variant bits; see section 4.1.1
-	uuid[8] = uuid[8]&^0xc0 | 0x80
-	// version 4 (pseudo-random); see section 4.1.3
-	uuid[6] = uuid[6]&^0xf0 | 0x40
-	return fmt.Sprintf("%x-%x-%x-%x-%x", uuid[0:4], uuid[4:6], uuid[6:8], uuid[8:10], uuid[10:]), nil
+	//fmt.Println(out)
+	return out.String(), err
 }
 
 // Shut down.
@@ -179,11 +203,16 @@ func finish(cBucket *gocb.Bucket) {
 	return number + FlowControl(controller, uuid, number-1, jsonGROUP, jsonDEVICE, jsonAPP, myBucket)
 }*/
 
-/*func upsertOne(num int, jsonACCT map[string]interface{}, jsonCUST map[string]interface{}, myBucket *gocb.Bucket) {
-
-	// Upsert One Document
-	str := strconv.Itoa(num)
-	fmt.Println("Upsert: ", str)
-	myBucket.Upsert("ACCT::"+str, jsonACCT, 0)
-	myBucket.Upsert("CUST::"+str, jsonCUST, 0)
-}*/
+/*tmpCUST, err := os.OpenFile("/Users/justin/Documents/Symantec/sampledata/stocks.json", os.O_RDONLY, 0644)
+	if err != nil {
+		fmt.Printf("error opening file: %v\n",err)
+		os.Exit(55)
+	}
+	sc := bufio.NewScanner(tmpCUST)
+	for sc.Scan() {
+		fmt.Println(sc.Text())
+	}
+	if err := sc.Err(); err != nil {
+		fmt.Printf("error opening file: %v\n",err)
+		os.Exit(55)
+	}*/
