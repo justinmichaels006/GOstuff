@@ -16,18 +16,18 @@ func main() {
 	// 1 Customer -> 800 to 1200 Groups -> 40 to 80 Devices -> 70 to 200 App
 	// 10,000 Customers -> 1M Groups -> 50M Devices -> 2B App
 	//TODO: Create ranges during simulation
-	var cusomterTotal = 1 //10000;
+	var cusomterTotal = 2 //10000;
 	var groupTotal = cusomterTotal * 2 //1000
 	var deviceTotal = 5 //50
-	var appTotal = 20 //200
-	var appCatalog = 200 //2000
-	var MaxBatch = 10
+	var appTotal = 2 //200
+	var appCatalog = 2 //2000
+	var MaxBatch = 1
 	// Create an Array of BulkOps for Insert
 	var itemCust []gocb.BulkOp
 	var itemGroups []gocb.BulkOp
 	var itemDevice []gocb.BulkOp
 	var itemApp []gocb.BulkOp
-	//var flowControl = false
+	//var fControl = make(chan bool)
 	var seedNode string
 	// holds the arguments for Couchbase seed node
 	//seedNode = ("couchbase://" + os.Args[1])
@@ -95,6 +95,7 @@ func main() {
 			itemApp = nil
 			myB.Do(ops)
 		}
+		fmt.Println("Got this far APP")
 	}
 
 	for x := cusomterTotal; x != 0; x-- {
@@ -131,12 +132,11 @@ func main() {
 
 			for j := 0; j < deviceTotal; j++ {
 				docDEVICE["TYPE"] = "DEVICE"
-				for k := 0; k <= appTotal; k++ {
-					for m := 0; m < appTotal; m++ {
-						var a = rand.Intn(appCatalog)
-						// fmt.Println(a) //debug
-						appArray[m] = "APP::" + strconv.Itoa(a)
-					}
+				for m := 0; m < appTotal; m++ {
+					var a = rand.Intn(appCatalog)
+					// fmt.Println(a) //debug
+					appArray[m] = "APP::" + strconv.Itoa(a)
+				}
 				docDEVICE["APP_install"] = appArray
 
 				itemDevice = append(itemDevice, &gocb.InsertOp{Key: uuid + "::DEVICE::" + strconv.Itoa(j), Value: &docDEVICE})
@@ -145,12 +145,15 @@ func main() {
 					itemDevice = nil
 					myB.Do(ops3)
 				}
-
-				}
+			fmt.Println("Got this far DEVICE")
 			}
+		fmt.Println("Got this far GROUP")
 		}
+	fmt.Println("Got this far CUST")
+	if x == 0 {
+		go finish(myB)
 	}
-	go finish(myB)
+	}
 }
 
 // newUUID generates a random UUID according to RFC 4122
