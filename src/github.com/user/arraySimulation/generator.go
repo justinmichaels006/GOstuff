@@ -27,8 +27,9 @@ func main() {
 	var itemGroups []gocb.BulkOp
 	var itemDevice []gocb.BulkOp
 	var itemApp []gocb.BulkOp
-	//var fControl = make(chan bool)
 	var seedNode string
+	appArray := make([]string, appTotal)
+
 	// holds the arguments for Couchbase seed node
 	//seedNode = ("couchbase://" + os.Args[1])
 	seedNode = ("couchbase://" + "192.168.61.101")
@@ -37,16 +38,7 @@ func main() {
 	myC, _ := gocb.Connect(seedNode)
 	myB, _ := myC.OpenBucket("testload", "")
 
-	//var appArray [appTotal]string
-	appArray := make([]string, appTotal)
-
-	//fmt.Printf("%s\n", uuid) // Debug
-	/*batcher := InsertBatcher{
-		Bucket: myB,
-		MaxBatch: 10,
-	}*/
-
-	// Read the Group file
+	// Read the file for each doc type
 	tmpGROUP, err := os.OpenFile("/Users/justin/Documents/Symantec/sampledata/GROUP.json", os.O_RDONLY, 0644)
 	if err != nil {
 		panic(err)
@@ -95,7 +87,7 @@ func main() {
 			itemApp = nil
 			myB.Do(ops)
 		}
-		fmt.Println("Got this far APP")
+		//fmt.Println("Got this far APP") //debug
 	}
 
 	for x := cusomterTotal; x != 0; x-- {
@@ -111,7 +103,6 @@ func main() {
 
 		itemCust = append(itemCust, &gocb.InsertOp{Key: uuid + "::" + strconv.Itoa(x), Value: &docCUST})
 		if len(itemCust) >= MaxBatch {
-			fmt.Println("Got this far CUST")
 			ops1 := itemCust
 			itemCust = nil
 			myB.Do(ops1)
@@ -145,13 +136,13 @@ func main() {
 					itemDevice = nil
 					myB.Do(ops3)
 				}
-			fmt.Println("Got this far DEVICE")
+			// fmt.Println("Got this far DEVICE") //debug
 			}
-		fmt.Println("Got this far GROUP")
+		// fmt.Println("Got this far GROUP") //debug
 		}
-	fmt.Println("Got this far CUST")
-		go finish(myB)
+	//fmt.Println("Got this far CUST") //debug
 	}
+go finish(myB)
 }
 
 // newUUID generates a random UUID according to RFC 4122
