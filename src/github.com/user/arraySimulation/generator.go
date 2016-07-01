@@ -10,22 +10,39 @@ import (
 	"github.com/nu7hatch/gouuid"
 )
 
+type InsertBatcher struct {
+	Bucket   *gocb.Bucket
+	MaxBatch int
+	ops      []gocb.BulkOp
+}
+
+func (ib InsertBatcher) Add(op gocb.InsertOp) error {
+	ib.ops = append(ib.ops, &op)
+	fmt.Println("Got this far")
+	if len(ib.ops) >= ib.MaxBatch {
+		ops := ib.ops
+		ib.ops = nil
+		return ib.Bucket.Do(ops)
+	}
+	return nil
+}
+
 func main() {
 
 	// Configuration
 	// 1 Customer -> 800 to 1200 Groups -> 40 to 80 Devices -> 70 to 200 App
 	// 10,000 Customers -> 1M Groups -> 50M Devices -> 2B App
 	//TODO: Create ranges during simulation
-	var cusomterTotal = 100 //10000;
+	var cusomterTotal = 5 //10000;
 	var groupTotal = cusomterTotal * 1000
 	var deviceTotal = 50
 	var appTotal = 200
-	var appCatalog = 2000
+	var appCatalog = 200
 	// Create an Array of BulkOps for Insert
-	var itemCust []gocb.BulkOp
-	var itemGroups []gocb.BulkOp
-	var itemDevice []gocb.BulkOp
-	var itemApp []gocb.BulkOp
+	//var itemCust []gocb.BulkOp
+	//var itemGroups []gocb.BulkOp
+	//var itemDevice []gocb.BulkOp
+	//var itemApp []gocb.BulkOp
 	//var flowControl = false
 	var seedNode string
 	// holds the arguments for Couchbase seed node
@@ -35,6 +52,11 @@ func main() {
 	// Connect to Couchbase
 	myC, _ := gocb.Connect(seedNode)
 	myB, _ := myC.OpenBucket("testload", "")
+
+	batcher := InsertBatcher{
+		Bucket: myB,
+		MaxBatch: 10,
+	}
 
 	// Read the Group file
 	tmpGROUP, err := os.OpenFile("/Users/justin/Documents/Symantec/sampledata/GROUP.json", os.O_RDONLY, 0644)
@@ -79,13 +101,20 @@ func main() {
 	//Create Simulated App Catalog
 	for y := 0; y < appCatalog; y++ {
 		docAPP["TYPE"] = "APP"
-		itemApp = append(itemApp, &gocb.InsertOp{Key: "APP::" + strconv.Itoa(y), Value: &docAPP})
+		err := batcher.Add(gocb.InsertOp{Key: "APP::" + strconv.Itoa(y), Value: &docAPP})
+		if err != nil {
+			fmt.Println("ERRROR PERFORMING CATALOG INSERT:", err)
+		}
 	}
-	// Perform the bulk operation
-	err = myB.Do(itemApp)
-	if err != nil {
-		fmt.Println("ERRROR PERFORMING CATALOG INSERT:", err)
+
+	/* Sample implementation of the batcher
+	for i := 0; i < 10000; i++ {
+		err := batcher.Add(someInsertOp)
+		if err != nil {
+			fmt.Printf("something broked")
+		}
 	}
+	*/
 
 	for x := cusomterTotal; x != 0; x-- {
 		// Create the Customer that will anchor the rest of the relationships
@@ -94,7 +123,11 @@ func main() {
 		docCUST["TYPE"] = "CUSTOMER"
 		docCUST["ID"] = uuid
 		docCUST["NUM"] = x
-		itemCust = append(itemCust, &gocb.InsertOp{Key: uuid + "::" + strconv.Itoa(x), Value: &docCUST})
+
+		err = batcher.Add(gocb.InsertOp{Key: uuid + "::" + strconv.Itoa(x), Value: &docCUST})
+		if err != nil {
+			fmt.Println("CUSTOMER " + strconv.Itoa(x))
+		}
 
 		//var appArray [appTotal]string
 		appArray := make([]string, appTotal)
@@ -108,7 +141,13 @@ func main() {
 		for i := 0; i < groupTotal; i++ {
 			docGROUP["TYPE"] = "GROUP"
 			docGROUP["GROUP_id"] = uuid
-			itemGroups = append(itemGroups, &gocb.InsertOp{Key: uuid + "::GROUP::" + strconv.Itoa(i), Value: &docGROUP})
+
+			err := batcher.Add(gocb.InsertOp{Key: uuid + "::GROUP::" + strconv.Itoa(i), Value: &docGROUP})
+			if err != nil {
+				fmt.Println("GROUP " + strconv.Itoa(i))
+			}
+
+
 			for j := 0; j < deviceTotal; j++ {
 				docDEVICE["TYPE"] = "DEVICE"
 				for k := 0; k <= appTotal; k++ {
@@ -118,41 +157,17 @@ func main() {
 						appArray[m] = "APP::" + strconv.Itoa(a)
 					}
 				docDEVICE["APP_install"] = appArray
-				itemDevice = append(itemDevice, &gocb.InsertOp{Key: uuid + "::DEVICE::" + strconv.Itoa(j), Value: &docDEVICE})
 
-					//TODO: Add the catalog_app_version document
-					/*docAPP["TYPE"] = "APP"
-					itemApp = append(itemApp, &gocb.InsertOp{Key: uuid + "::APP::" + strconv.Itoa(k), Value: &docAPP})
-					}
-					// Perform bulk operation
-					err = myB.Do(itemApp)
-					if err != nil {
-					fmt.Println("ERRROR PERFORMING BULK INSERT:", err)
-					*/
+				err := batcher.Add(gocb.InsertOp{Key: uuid + "::DEVICE::" + strconv.Itoa(j), Value: &docDEVICE})
+				if err != nil {
+					fmt.Println("DEVICE " + strconv.Itoa(j))
+				}
 
 				}
 			}
-			// Perform the DEVICE bulk operation
-			err = myB.Do(itemDevice)
-			if err != nil {
-				fmt.Println("ERRROR PERFORMING DEVICE INSERT:", err)
-			}
 		}
-		// Perform the GROUP bulk operation
-		err = myB.Do(itemGroups)
-		if err != nil {
-			fmt.Println("ERRROR PERFORMING GROUP INSERT:", err)
-		}
-
 	}
-	// Perform the CUSTOMER bulk operation
-	err = myB.Do(itemCust)
-	if err != nil {
-		fmt.Println("ERRROR PERFORMING CUSTOMER INSERT:", err)
-	}
-
-	finish(myB)
-
+	go finish(myB)
 }
 
 // newUUID generates a random UUID according to RFC 4122
