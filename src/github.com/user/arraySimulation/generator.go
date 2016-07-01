@@ -150,9 +150,7 @@ func main() {
 		fmt.Println("Got this far GROUP")
 		}
 	fmt.Println("Got this far CUST")
-	if x == 0 {
 		go finish(myB)
-	}
 	}
 }
 
