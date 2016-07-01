@@ -142,7 +142,7 @@ func main() {
 		}
 	//fmt.Println("Got this far CUST") //debug
 	}
-go finish(myB)
+finish(myB)
 }
 
 // newUUID generates a random UUID according to RFC 4122
