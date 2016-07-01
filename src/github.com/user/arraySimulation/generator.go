@@ -10,39 +10,23 @@ import (
 	"github.com/nu7hatch/gouuid"
 )
 
-type InsertBatcher struct {
-	Bucket   *gocb.Bucket
-	MaxBatch int
-	ops      []gocb.BulkOp
-}
-
-func (ib InsertBatcher) Add(op gocb.InsertOp) error {
-	ib.ops = append(ib.ops, &op)
-	fmt.Println("Got this far")
-	if len(ib.ops) >= ib.MaxBatch {
-		ops := ib.ops
-		ib.ops = nil
-		return ib.Bucket.Do(ops)
-	}
-	return nil
-}
-
 func main() {
 
 	// Configuration
 	// 1 Customer -> 800 to 1200 Groups -> 40 to 80 Devices -> 70 to 200 App
 	// 10,000 Customers -> 1M Groups -> 50M Devices -> 2B App
 	//TODO: Create ranges during simulation
-	var cusomterTotal = 5 //10000;
-	var groupTotal = cusomterTotal * 1000
-	var deviceTotal = 50
-	var appTotal = 200
-	var appCatalog = 200
+	var cusomterTotal = 1 //10000;
+	var groupTotal = cusomterTotal * 2 //1000
+	var deviceTotal = 5 //50
+	var appTotal = 20 //200
+	var appCatalog = 200 //2000
+	var MaxBatch = 10
 	// Create an Array of BulkOps for Insert
-	//var itemCust []gocb.BulkOp
-	//var itemGroups []gocb.BulkOp
-	//var itemDevice []gocb.BulkOp
-	//var itemApp []gocb.BulkOp
+	var itemCust []gocb.BulkOp
+	var itemGroups []gocb.BulkOp
+	var itemDevice []gocb.BulkOp
+	var itemApp []gocb.BulkOp
 	//var flowControl = false
 	var seedNode string
 	// holds the arguments for Couchbase seed node
@@ -53,10 +37,14 @@ func main() {
 	myC, _ := gocb.Connect(seedNode)
 	myB, _ := myC.OpenBucket("testload", "")
 
-	batcher := InsertBatcher{
+	//var appArray [appTotal]string
+	appArray := make([]string, appTotal)
+
+	//fmt.Printf("%s\n", uuid) // Debug
+	/*batcher := InsertBatcher{
 		Bucket: myB,
 		MaxBatch: 10,
-	}
+	}*/
 
 	// Read the Group file
 	tmpGROUP, err := os.OpenFile("/Users/justin/Documents/Symantec/sampledata/GROUP.json", os.O_RDONLY, 0644)
@@ -101,50 +89,43 @@ func main() {
 	//Create Simulated App Catalog
 	for y := 0; y < appCatalog; y++ {
 		docAPP["TYPE"] = "APP"
-		err := batcher.Add(gocb.InsertOp{Key: "APP::" + strconv.Itoa(y), Value: &docAPP})
-		if err != nil {
-			fmt.Println("ERRROR PERFORMING CATALOG INSERT:", err)
+		itemApp = append(itemApp, &gocb.InsertOp{Key: "APP::" + strconv.Itoa(y), Value: &docAPP})
+		if len(itemApp) >= MaxBatch {
+			ops := itemApp
+			itemApp = nil
+			myB.Do(ops)
 		}
 	}
-
-	/* Sample implementation of the batcher
-	for i := 0; i < 10000; i++ {
-		err := batcher.Add(someInsertOp)
-		if err != nil {
-			fmt.Printf("something broked")
-		}
-	}
-	*/
 
 	for x := cusomterTotal; x != 0; x-- {
 		// Create the Customer that will anchor the rest of the relationships
 		uuid, err := newUUID()
+		if err != nil {
+			fmt.Printf("error: %v\n", err)
+		}
 
 		docCUST["TYPE"] = "CUSTOMER"
 		docCUST["ID"] = uuid
 		docCUST["NUM"] = x
 
-		err = batcher.Add(gocb.InsertOp{Key: uuid + "::" + strconv.Itoa(x), Value: &docCUST})
-		if err != nil {
-			fmt.Println("CUSTOMER " + strconv.Itoa(x))
+		itemCust = append(itemCust, &gocb.InsertOp{Key: uuid + "::" + strconv.Itoa(x), Value: &docCUST})
+		if len(itemCust) >= MaxBatch {
+			fmt.Println("Got this far CUST")
+			ops1 := itemCust
+			itemCust = nil
+			myB.Do(ops1)
 		}
-
-		//var appArray [appTotal]string
-		appArray := make([]string, appTotal)
-
-		if err != nil {
-			fmt.Printf("error: %v\n", err)
-		}
-		//fmt.Printf("%s\n", uuid) // Debug
 
 		//Create Devices and Groups
 		for i := 0; i < groupTotal; i++ {
 			docGROUP["TYPE"] = "GROUP"
 			docGROUP["GROUP_id"] = uuid
 
-			err := batcher.Add(gocb.InsertOp{Key: uuid + "::GROUP::" + strconv.Itoa(i), Value: &docGROUP})
-			if err != nil {
-				fmt.Println("GROUP " + strconv.Itoa(i))
+			itemGroups = append(itemGroups, &gocb.InsertOp{Key: uuid + "::GROUP::" + strconv.Itoa(i), Value: &docGROUP})
+			if len(itemGroups) >= MaxBatch {
+				ops2 := itemGroups
+				itemGroups = nil
+				myB.Do(ops2)
 			}
 
 
@@ -158,9 +139,11 @@ func main() {
 					}
 				docDEVICE["APP_install"] = appArray
 
-				err := batcher.Add(gocb.InsertOp{Key: uuid + "::DEVICE::" + strconv.Itoa(j), Value: &docDEVICE})
-				if err != nil {
-					fmt.Println("DEVICE " + strconv.Itoa(j))
+				itemDevice = append(itemDevice, &gocb.InsertOp{Key: uuid + "::DEVICE::" + strconv.Itoa(j), Value: &docDEVICE})
+				if len(itemDevice) >= MaxBatch {
+					ops3 := itemDevice
+					itemDevice = nil
+					myB.Do(ops3)
 				}
 
 				}
