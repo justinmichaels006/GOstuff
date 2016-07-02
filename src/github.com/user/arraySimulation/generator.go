@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"math/rand"
 	"github.com/nu7hatch/gouuid"
+	"time"
 )
 
 func main() {
@@ -22,11 +23,13 @@ func main() {
 	var appTotal = 2 //200
 	var appCatalog = 2 //2000
 	var MaxBatch = 1
+	rand.Seed(time.Now().Unix())
 	// Create an Array of BulkOps for Insert
 	var itemCust []gocb.BulkOp
 	var itemGroups []gocb.BulkOp
 	var itemDevice []gocb.BulkOp
 	var itemApp []gocb.BulkOp
+	var itemAppFile []gocb.BulkOp
 	var seedNode string
 	appArray := make([]string, appTotal)
 
@@ -75,8 +78,12 @@ func main() {
 	}
 
 	var docCUST map[string]interface{}
-	str := `{"TYPE": "CUSTONMER", "ID": "uuid", "NUM": "x"}`
-	json.Unmarshal([]byte(str), &docCUST)
+	str1 := `{"TYPE": "CUSTONMER", "ID": "uuid", "NUM": "x"}`
+	json.Unmarshal([]byte(str1), &docCUST)
+
+	var docAPPFile map[string]interface{}
+	str2 := `{"TYPE": "APPFILE", "NUM": "x"}`
+	json.Unmarshal([]byte(str2), &docAPPFile)
 
 	//Create Simulated App Catalog
 	for y := 0; y < appCatalog; y++ {
@@ -86,6 +93,16 @@ func main() {
 			ops := itemApp
 			itemApp = nil
 			myB.Do(ops)
+		}
+		for m := 0; m < 10; m++ {
+			docAPPFile["TYPE"] = "APPFILE"
+			docAPPFile["NAME"] = "some.dll"
+			itemAppFile = append(itemAppFile, &gocb.InsertOp{Key: "APP::" + strconv.Itoa(y) + "::" + strconv.Itoa(m), Value: &docAPPFile})
+			if len(itemAppFile) >= 10 {
+				ops := itemAppFile
+				itemAppFile = nil
+				myB.Do(ops)
+			}
 		}
 		//fmt.Println("Got this far APP") //debug
 	}
@@ -126,7 +143,7 @@ func main() {
 				for m := 0; m < appTotal; m++ {
 					var a = rand.Intn(appCatalog)
 					// fmt.Println(a) //debug
-					appArray[m] = "APP::" + strconv.Itoa(a)
+					appArray[m] = "APP::" + strconv.Itoa(a) + "::" + strconv.Itoa(rand.Intn(10))
 				}
 				docDEVICE["APP_install"] = appArray
 
@@ -167,44 +184,3 @@ func finish(cBucket *gocb.Bucket) {
 	fmt.Println("Good Bye")
 	os.Exit(101)
 }
-
-/*func FlowControl(controller bool, number int, uuid string,
-	jsonGROUP map[string]interface{},
-	jsonDEVICE map[string]interface{},
-	jsonAPP map[string]interface{}, myBucket *gocb.Bucket) int {
-
-	if number == 0 {
-		fmt.Println("Done: ", number)
-		go finish(myBucket)
-	}
-
-	str := strconv.Itoa(number)
-	//fmt.Println("Upsert: ", str)
-
-	now := time.Now()
-	nanos := now.UnixNano()
-	millis := nanos / 1000000
-
-	jsonGROUP["upStamp"] = millis
-	jsonDEVICE["upStamp"] = millis
-	jsonAPP["upStamp"] = millis
-	myBucket.Upsert("GROUP::"+str, jsonGROUP, 0)
-	myBucket.Upsert("DEVICE::"+str, jsonDEVICE, 0)
-	myBucket.Upsert("APP::"+str, jsonAPP, 0)
-
-	return number + FlowControl(controller, uuid, number-1, jsonGROUP, jsonDEVICE, jsonAPP, myBucket)
-}*/
-
-/*tmpCUST, err := os.OpenFile("/Users/justin/Documents/Symantec/sampledata/stocks.json", os.O_RDONLY, 0644)
-	if err != nil {
-		fmt.Printf("error opening file: %v\n",err)
-		os.Exit(55)
-	}
-	sc := bufio.NewScanner(tmpCUST)
-	for sc.Scan() {
-		fmt.Println(sc.Text())
-	}
-	if err := sc.Err(); err != nil {
-		fmt.Printf("error opening file: %v\n",err)
-		os.Exit(55)
-	}*/
