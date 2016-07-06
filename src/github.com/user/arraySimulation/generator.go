@@ -17,12 +17,12 @@ func main() {
 	// 1 Customer -> 800 to 1200 Groups -> 40 to 80 Devices -> 70 to 200 App
 	// 10,000 Customers -> 1M Groups -> 50M Devices -> 2B App
 	//TODO: Create ranges during simulation
-	var cusomterTotal = 2 //10000;
-	var groupTotal = cusomterTotal * 2 //1000
-	var deviceTotal = 5 //50
-	var appTotal = 2 //200
-	var appCatalog = 2 //2000
-	var MaxBatch = 1
+	var cusomterTotal = 100 //10000;
+	var groupTotal = cusomterTotal * 1000
+	var deviceTotal = 50
+	var appTotal = 200
+	var appCatalog = 2000
+	var MaxBatch = 50
 	rand.Seed(time.Now().Unix())
 	// Create an Array of BulkOps for Insert
 	var itemCust []gocb.BulkOp
