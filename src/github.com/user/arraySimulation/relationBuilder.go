@@ -44,6 +44,7 @@ func main() {
 	var deviceID string
 	var appID string
 	var row map[string]interface{}
+	var row2 map[string]interface{}
 
 	for rows.Next(&row) {
 		deviceID = row["id"].(string)
@@ -65,8 +66,8 @@ func main() {
 
 	bQuery := gocb.NewN1qlQuery("select meta().id,App,Device,TYPE from testload where TYPE = \"REL\"")
 	rowsb, err := myBu.ExecuteN1qlQuery(bQuery, nil)
-	for rowsb.Next(&row) {
-		fmt.Printf("Row: %+v\n", row["id"].(string), row["App"].(string), row["Device"].(string), row["TYPE"].(string))
+	for rowsb.Next(&row2) {
+		fmt.Printf("Row: %+v\n", row2["id"].(string), row2["App"].(string), row2["Device"].(string), row2["TYPE"].(string))
 	}
 	if err = rows.Close(); err != nil {
 		fmt.Printf("Couldn't get all the rows: %s\n", err);

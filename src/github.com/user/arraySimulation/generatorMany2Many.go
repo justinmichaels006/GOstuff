@@ -17,9 +17,9 @@ func main() {
 	// 1 Customer -> 800 to 1200 Groups -> 40 to 80 Devices -> 70 to 200 App
 	// 10,000 Customers -> 1M Groups -> 50M Devices -> 2B App
 	//TODO: Create ranges during simulation
-	var cusomterTotal = 3 //10000;
-	var groupTotal = cusomterTotal * 5
-	var deviceTotal = 5
+	var cusomterTotal = 2 //10000;
+	var groupTotal = cusomterTotal * 2
+	var deviceTotal = groupTotal * 2
 	//var appTotal = 200
 	var appCatalog = 20
 	var MaxBatch = 1
