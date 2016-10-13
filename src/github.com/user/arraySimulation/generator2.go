@@ -17,16 +17,15 @@ func main() {
 	// 1 Customer -> 800 to 1200 Groups -> 40 to 80 Devices -> 70 to 200 App
 	// 10,000 Customers -> 1M Groups -> 50M Devices -> 2B App
 	//TODO: Create ranges during simulation
-	var cusomterTotal = 100 //10000;
-	var groupTotal = cusomterTotal * 1000
-	var deviceTotal = 50
-	var appTotal = 200
-	var appCatalog = 2000
-	var controller = false
-	fControl := make(chan string)
-	var seedNode string
+	var cusomterTotal = 1 //100 //10000;
+	var groupTotal = cusomterTotal * 10 //1000
+	var deviceTotal = 5 //50
+	var appTotal = 2 //200
+	var appCatalog = 200 //2000
+	fControl := make(chan bool)
+	// Create an Array of BulkOps for the App Catalog
 	var itemApp []gocb.BulkOp
-
+	var seedNode string
 	// holds the arguments for Couchbase seed node
 	//seedNode = ("couchbase://" + os.Args[1])
 	seedNode = ("couchbase://" + "192.168.61.101")
@@ -86,84 +85,78 @@ func main() {
 		fmt.Println("ERRROR PERFORMING CATALOG INSERT:", err)
 	}
 
-	//Create The Customer
-	go FlowControl(controller, cusomterTotal, "CUSTOMER", docCUST, myB, fControl)
+	for x := cusomterTotal; x != 0; x-- {
+		// Create the Customer that will anchor the rest of the relationships
+		uuid, err := newUUID3()
 
-	//TODO: Add the catalog_app_version document
+		docCUST["TYPE"] = "CUSTOMER"
+		docCUST["ID"] = "CUSTOMER::" + uuid + "::" + strconv.Itoa(x)
 
-	if fControl == true {
-		finish2(myB)
+		//(int, uuid, type, jsonDOC, myBucket, chan)
+		go FlowControl2(x, uuid, "CUSTOMER", docCUST, myB)
+		//FlowControl3(x, uuid, "CUSTOMER", docCUST, myB)
+
+		//Create Groups
+		for i := 0; i < groupTotal; i++ {
+			docGROUP["TYPE"] = "GROUP"
+			docGROUP["GROUP_id"] = "GROUP::" + uuid + "::" + strconv.Itoa(i)
+
+			//(int, uuid, type, jsonDOC, myBucket, chan)
+			go FlowControl2(i, uuid, "GROUP", docGROUP, myB)
+			//FlowControl3(i, uuid, "GROUP", docGROUP, myB)
+
+			//Create Devices
+			for j := 0; j < deviceTotal; j++ {
+				docDEVICE["TYPE"] = "DEVICE"
+				docDEVICE["DEVICE_id"] = "DEVICE::" + uuid + "::" + strconv.Itoa(j)
+
+				//Array of apps from the catalog
+				appArray := make([]string, appTotal)
+				if err != nil {
+					fmt.Printf("error: %v\n", err)
+				}
+
+				for k := 0; k < appTotal; k++ {
+					var a = rand.Intn(appCatalog)
+					// fmt.Println(a) //debug
+					appArray[k] = "APP::" + strconv.Itoa(a)
+				}
+
+				docDEVICE["APP_install"] = appArray
+
+				//(int, uuid, type, jsonDOC, myBucket, chan)
+				go FlowControl3(j, uuid, "DEVICE", docDEVICE, myB)
+				//FlowControl3(j, uuid, "DEVICE", docDEVICE, myB)
+
+				//TODO: Add the catalog_app_version document
+			}
+		}
+		fControl <- true
 	}
+
+	if <-fControl {
+		fmt.Println("Done")
+		go finish2(myB)
+	}
+
 }
 
-//Customer (controller, cusomterTotal, theType, docGROUP, myB, fControl)
-func FlowControl(controller bool, number int, theTYPE string,
-	jsonDOC map[string]interface{}, myBucket *gocb.Bucket, msg chan string) int {
+func FlowControl2(number int, uuid string, theType string,
+jsonDOC map[string]interface{}, myBucket *gocb.Bucket) {
 
-	if number == 0 {
-		fmt.Println("Done: ", number)
-		msg := <- "DONE"
-		return msg
-	}
+	str := strconv.Itoa(number)
+	theID := theType + "::" + uuid + "::" + str
+	//fmt.Println("Upsert: ", str)
 
-	// Create the Customer that will anchor the rest of the relationships
-	uuid, err := newUUID2()
-	if err != nil {
-		fmt.Println("uuid issue")
-	}
 	now := time.Now()
 	nanos := now.UnixNano()
 	millis := nanos / 1000000
-	theID := uuid
-
 	jsonDOC["upStamp"] = millis
-	jsonDOC["CUST_id"] = uuid
-	jsonDOC["CUST_num"] = strconv.Itoa(number)
-	jsonDOC["TYPE"] = theTYPE
+
 	myBucket.Upsert(theID, jsonDOC, 0)
 
-	//Group (num uuid.UUID, number int, theTYPE string,jsonDOC map[string]interface{}, myBucket *gocb.Bucket, msg chan string)
-	return number + FlowGroups(uuid, 1000, "GROUP", , myBucket, msg)
-}
-
-
-//Groups
-func FlowGroups (num uuid.UUID, number int, theTYPE string,
-	jsonDOC map[string]interface{}, myBucket *gocb.Bucket, msg chan string) int {
-
-	now := time.Now()
-	nanos := now.UnixNano()
-	millis := nanos / 1000000
-
-	jsonDOC["upStamp"] = millis
-	jsonDOC["CUST_id"] = uuid
-	jsonDOC["CUST_num"] = strconv.Itoa(number)
-	jsonDOC["TYPE"] = theTYPE
-	docGROUP["TYPE"] = theType
-	go FlowControl(controller, groupTotal, theType, docGROUP, myB, fControl)
-	if fControl == true {
-
-	}
 	return
 }
-
-//Devices
-func FlowDevices (num uuid.UUID, number int, theTYPE string,
-jsonDOC map[string]interface{}, myBucket *gocb.Bucket, msg chan string) int {
-	if
-	//var appArray [appTotal]string
-	appArray := make([]string, number)
-	//fmt.Printf("%s\n", uuid) // Debug
-	for m := 0; m < number; m++ {
-		var a = rand.Intn(number)
-		// fmt.Println(a) //debug
-		appArray[m] = "APP::" + strconv.Itoa(a)
-	}
-	jsonDOC["APP_install"] = appArray
-
-	return
-}
-
 
 // newUUID generates a random UUID according to RFC 4122
 func newUUID2() (string, error) {
@@ -187,3 +180,17 @@ func finish2(cBucket *gocb.Bucket) {
 	fmt.Println("Good Bye")
 	os.Exit(101)
 }
+
+/*tmpCUST, err := os.OpenFile("/Users/justin/Documents/Symantec/sampledata/stocks.json", os.O_RDONLY, 0644)
+	if err != nil {
+		fmt.Printf("error opening file: %v\n",err)
+		os.Exit(55)
+	}
+	sc := bufio.NewScanner(tmpCUST)
+	for sc.Scan() {
+		fmt.Println(sc.Text())
+	}
+	if err := sc.Err(); err != nil {
+		fmt.Printf("error opening file: %v\n",err)
+		os.Exit(55)
+	}*/

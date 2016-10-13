@@ -30,6 +30,12 @@ func main() {
 	var itemDevice []gocb.BulkOp
 	var itemApp []gocb.BulkOp
 	var itemAppFile []gocb.BulkOp
+	// Channel controls
+	fCust := make(chan bool)
+	//fGroup := make(chan bool)
+	//fDevice := make(chan bool)
+	//fApp := make(chan bool)
+	//fAppFile := make(chan bool)
 	var seedNode string
 	appArray := make([]string, appTotal)
 
@@ -105,6 +111,7 @@ func main() {
 			}
 		}
 		//fmt.Println("Got this far APP") //debug
+		//fApp <- true
 	}
 
 	for x := cusomterTotal; x != 0; x-- {
@@ -154,11 +161,17 @@ func main() {
 					myB.Do(ops3)
 				}
 			// fmt.Println("Got this far DEVICE") //debug
+			//fDevice <- true
 			}
 		// fmt.Println("Got this far GROUP") //debug
+		//fGroup <- true
 		}
 	//fmt.Println("Got this far CUST") //debug
+	//fCust <- true
 	}
+
+<-fCust
+
 finish(myB)
 }
 
