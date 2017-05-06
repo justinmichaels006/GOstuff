@@ -1,99 +1,36 @@
 package main
 
 import (
-	"github.com/couchbaselabs/gocb"
+	"gopkg.in/couchbase/gocb.v1"
 	"fmt"
 	"strconv"
-	"sync"
 	"os"
-	//"io/ioutil"
-	"math/rand"
 	"encoding/json"
+	"math/rand"
+	"github.com/gorilla/mux"
+	"net/http"
+	"io"
 )
 
-func f(jsonA map[string]interface{}, jsonCH map[string]interface{}, jsonCONT map[string]interface{}, myBucket *gocb.Bucket, wg sync.WaitGroup) {
-	for i := 1; i < 200; i++ {
-
-		i := strconv.Itoa(i)
-		chID := ("CH::" + i);
-		contID := ("CONT::" + i);
-
-		//Element a3 and ch11 should be the same
-		Aelement3_CHelement11 := RandIntBytes(4)
-		//ch.element41=13
-		CHelement41 := RandIntBytes(2)
-		//ch.element57="WNET"
-		CHelement57 := RandStringBytes(4)
-
-		/*var datCH map[string]interface{}
-		if err := json.Unmarshal(jsonCH, datCH);
-		err != nil {
-			fmt.Println(jsonCH)
-			fmt.Println("marshal error ... ", err)
-		}*/
-
-		jsonCH["Ch_element11"] = Aelement3_CHelement11
-		jsonCH["Ch_element41"] = CHelement41
-		jsonCH["Ch_element57"] = CHelement57
-
-		//jsonCH, _ := json.Marshal(jsonCH)
-
-		myBucket.Upsert(chID, jsonCH, 0);
-		myBucket.Upsert(contID, jsonCONT, 0);
-
-		//For every CH create 3000 A documents
-
-		for y := 1; y < 3; y++ {
-
-			y := strconv.Itoa(y)
-			aID := ("A::" + i + "::" + y)
-
-			/*var datA map[string]interface{}
-			if err := json.Unmarshal(jsonA, datA);
-			err != nil {
-				panic(err)
-			}*/
-
-			jsonA["A_element3"] = Aelement3_CHelement11
-			//jsonA, _ := json.Marshal(datA)
-
-			myBucket.Upsert(aID, jsonA, 0)
-			//fmt.Println("Debug ... y" + Aelement3_CHelement11)
-		};
-
-		//fmt.Println("Debug ... i" + i)
-	}
-
-	//fmt.Println("Wait Group Done ...")
-	wg.Done()
-}
-
-/*func RandStringBytes(n int) string {
-	const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
-	}
-	return string(b)
-}
-func RandIntBytes(n int) string {
-	const numBytes = "0123456789"
-
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = numBytes[rand.Intn(len(numBytes))]
-	}
-	return string(b)
-}*/
+var seed = os.Args[1]
+var myCluster, _ = gocb.Connect("couchbase://" + seed)
+var myBucket, _ = myCluster.OpenBucket("testload", "")
 
 func main() {
 
-	myCluster, _ := gocb.Connect("couchbase://192.168.5.81")
-	myBucket, _ := myCluster.OpenBucket("default", "")
+	rtr := mux.NewRouter()
+	rtr.HandleFunc("/testit", testit)
+	rtr.HandleFunc("/done", closeBucket)
+	rtr.HandleFunc("/doit", loadFunc)
 
+	http.ListenAndServe(":8888", rtr)
+
+}
+
+func loadFunc(w http.ResponseWriter, r101 *http.Request) {
+	//jsonA map[string]interface{}, jsonCH map[string]interface{}, jsonCONT map[string]interface{}, myBucket *gocb.Bucket, wg sync.WaitGroup
 	// read whole the file
-	tmpA, err := os.OpenFile("/Users/justin/GOstuff/a.json", os.O_RDONLY, 0644)
+	tmpA, err := os.OpenFile("/tmp/a.json", os.O_RDONLY, 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -104,7 +41,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	tmpCH, err := os.OpenFile("/Users/justin/GOstuff/ch.json", os.O_RDONLY, 0644)
+	tmpCH, err := os.OpenFile("/tmp/ch.json", os.O_RDONLY, 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -115,7 +52,7 @@ func main() {
 		os.Exit(3)
 	}
 
-	tmpCONT, err := os.OpenFile("/Users/justin/GOstuff/cont.json", os.O_RDONLY, 0644)
+	tmpCONT, err := os.OpenFile("/tmp/cont.json", os.O_RDONLY, 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -126,13 +63,73 @@ func main() {
 		os.Exit(4)
 	}
 
-	var wg sync.WaitGroup
+	for i := 1; i < 50; i++ {
 
-	fmt.Println("Data creation ...")
+		j := strconv.Itoa(i)
+		chID := ("CH::" + j);
+		contID := ("CONT::" + j);
 
-	wg.Add(1)
-	go f(docA, docCH, docCONT, myBucket, wg)
-	wg.Wait()
+		//Element a3 and ch11 should be the same
+		Aelement3_CHelement11 := RandIntBytes2(4)
+		//ch.element41=13
+		CHelement41 := RandIntBytes2(2)
+		//ch.element57="WNET"
+		CHelement57 := RandStringBytes2(4)
 
-	os.Exit(0)
+		docCH["Ch_element11"] = Aelement3_CHelement11
+		docCH["Ch_element41"] = CHelement41
+		docCH["Ch_element57"] = CHelement57
+		docCH["type"] = "CH"
+		docCONT["type"] = "CONT"
+
+		myBucket.Upsert(chID, docCH, 0);
+		myBucket.Upsert(contID, docCONT, 0);
+
+		//For every CH create 3 A documents
+		for y := 1; y < 3; y++ {
+
+			y := strconv.Itoa(y)
+			aID := ("A::" + j + "::" + y)
+
+			docA["A_element3"] = Aelement3_CHelement11
+			docA["type"] = "A"
+
+			myBucket.Upsert(aID, docA, 0)
+			//	fmt.Println("Debug ... y" + Aelement3_CHelement11)
+		};
+
+		//fmt.Println("Debug ... i" + i)
+	}
+
+	fmt.Println("Debug ... Done")
+	io.WriteString(w, "...Load Complete...")
+}
+
+func closeBucket(w http.ResponseWriter, r *http.Request) {
+	io.WriteString(w, "Closed Bucket and Shutdown")
+	myBucket.Close()
+	os.Exit(88)
+}
+
+func testit(w http.ResponseWriter, r *http.Request) {
+	io.WriteString(w, "(Y)")
+}
+
+func RandStringBytes2(n int) string {
+	const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
+}
+func RandIntBytes2(n int) string {
+	const numBytes = "0123456789"
+
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = numBytes[rand.Intn(len(numBytes))]
+	}
+	return string(b)
 }
