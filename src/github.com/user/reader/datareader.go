@@ -53,10 +53,8 @@ func getOne(val int, myBucket *gocb.Bucket, ch chan bool) int {
 	theDoc["getStamp"] = millis
 	myBucket.Upsert(key, theDoc, 0)
 
-	myBucket.Get(key, &theDoc)
-	endTime := theDoc["getStamp"]
-	startTime := theDoc["upStamp"]
-	fmt.Println("Got It:", key, endTime, startTime)
+	myBucket.Get(key, theDoc)
+	fmt.Println("Got It:", key)
 	return val + getOne(val-1, myBucket, ch)
 
 }

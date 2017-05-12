@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"strconv"
 	"time"
+	"sync"
 )
 
 func FlowControl(controller bool, number int, jsonACCT map[string]interface{}, jsonCUST map[string]interface{}, myBucket *gocb.Bucket) int {
@@ -45,19 +46,21 @@ func main() {
 	// Configuration
 	//var getSetPercentage = 0.99;
 	//var totalDocs = 10000;
-	var currentGroup = 0;
-	var opsGroups = 50;
-	var runningLoad = false;
+	var currentGroup = 0
+	var opsGroups = 50000
+	var runningLoad = false
 	var seedNode string
+	var wg sync.WaitGroup
 	// holds the arguments for Couchbase seed node
 	seedNode = ("couchbase://" + os.Args[1])
+	//seedNode = ("couchbase://192.168.61.101")
 
 	// Connect to Couchbase
 	myC, _ := gocb.Connect(seedNode)
-	myB, _ := myC.OpenBucket("default", "")
+	myB, _ := myC.OpenBucket("test", "")
 
 	// read whole the file
-	tmpACCT, err := os.OpenFile("/tmp/ACCT.json", os.O_RDONLY, 0644)
+	tmpACCT, err := os.OpenFile("/tmp/a.json", os.O_RDONLY, 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -68,7 +71,7 @@ func main() {
 		os.Exit(52)
 	}
 
-	tmpCUST, err := os.OpenFile("/tmp/CUST.json", os.O_RDONLY, 0644)
+	tmpCUST, err := os.OpenFile("/tmp/ch.json", os.O_RDONLY, 0644)
 	if err != nil {
 		panic(err)
 	}
@@ -82,6 +85,8 @@ func main() {
 	if (runningLoad == false && currentGroup == 0) {
 		FlowControl(runningLoad, opsGroups, docACCT, docCUST, myB)
 	}
+
+	wg.Wait()
 }
 
 // Shut down.

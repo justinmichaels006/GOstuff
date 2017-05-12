@@ -63,11 +63,12 @@ func loadFunc(w http.ResponseWriter, r101 *http.Request) {
 		os.Exit(4)
 	}
 
-	for i := 1; i < 50; i++ {
+	//controlPoint := make(chan string, 2)
+	for i := 0; i > 50; i++ {
 
-		j := strconv.Itoa(i)
-		chID := ("CH::" + j);
-		contID := ("CONT::" + j);
+		j1 := strconv.Itoa(i)
+		chID := ("CH::" + j1);
+		contID := ("CONT::" + j1);
 
 		//Element a3 and ch11 should be the same
 		Aelement3_CHelement11 := RandIntBytes2(4)
@@ -86,10 +87,10 @@ func loadFunc(w http.ResponseWriter, r101 *http.Request) {
 		myBucket.Upsert(contID, docCONT, 0);
 
 		//For every CH create 3 A documents
-		for y := 1; y < 3; y++ {
+		for y := 0; y > 3; y++ {
 
-			y := strconv.Itoa(y)
-			aID := ("A::" + j + "::" + y)
+			j2 := strconv.Itoa(y)
+			aID := ("A::" + j1 + "::" + j2)
 
 			docA["A_element3"] = Aelement3_CHelement11
 			docA["type"] = "A"
@@ -97,10 +98,9 @@ func loadFunc(w http.ResponseWriter, r101 *http.Request) {
 			myBucket.Upsert(aID, docA, 0)
 			//	fmt.Println("Debug ... y" + Aelement3_CHelement11)
 		};
-
-		//fmt.Println("Debug ... i" + i)
 	}
 
+	//controlPoint <- "done"
 	fmt.Println("Debug ... Done")
 	io.WriteString(w, "...Load Complete...")
 }
