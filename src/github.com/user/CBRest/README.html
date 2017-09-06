@@ -11,6 +11,10 @@ http://localhost:8888/POSTit/airline_XX/%7B%22callsign%22:%22MILE-AIR%22,%22coun
 Close the bucket and clean up
 http://localhost:8888/done
 
+The following can be used in muli-cluster XDCR testing to understand latency between multiple "cluster hops".
+For example, if we have four clusters in a bidirection ring; A->B->C->A. You can start the GETbulk first on cluster C which will start reading pathologically for a set of keys. When this process finds the key the given document is updated with a timestamp (getstamp).
+Subsequently, the POSTbulk is then started on cluster A which will create the documents the reader is looking for. As each document is created a timestamp is added (upstamp). Based on these time stamps a profile can be defined of latencies between cluster replication.
+
 Create multiple documents controlled by "number" variable
 http://localhost:8888/POSTbulk/
 
