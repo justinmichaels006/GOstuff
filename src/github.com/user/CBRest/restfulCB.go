@@ -27,7 +27,12 @@ var bucket, _ = cluster.OpenBucket("testload", "testload")
 var waitGroup sync.WaitGroup
 //Number is the number of bulk operations to perform
 var number int = 10
-var somejson map[string]interface{}
+var jsonset map[string]interface{}
+var jsonget map[string]interface{}
+
+func testit(w http.ResponseWriter, r *http.Request) {
+	io.WriteString(w, "(Y)")
+}
 
 func closeBucket(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "Closed Bucket and Shutdown")
@@ -71,7 +76,7 @@ func bulkloader(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("loop check")
 	// Retrieve Document
-	_, err = bucket.Get("dummy", &somejson)
+	_, err = bucket.Get("dummy", &jsonset)
 	if err != nil {
 		fmt.Println("Doh!")
 	}
@@ -79,7 +84,7 @@ func bulkloader(w http.ResponseWriter, r *http.Request) {
 	waitGroup.Add(number)
 	// Channel our data so it can be picked up by an available goroutine
 	for i := 0; i < number; i++ {
-		go aworker(strconv.Itoa(i), somejson)
+		go aworker(strconv.Itoa(i), jsonset)
 	}
 
 	waitGroup.Wait()
@@ -107,7 +112,7 @@ func bulkreader(w http.ResponseWriter, r *http.Request) {
 	waitGroup.Add(number)
 	// Channel our data so it can be picked up by an available goroutine
 	for i := 0; i < number; i++ {
-		go bworker(i, somejson)
+		go bworker(i, jsonget)
 	}
 
 	waitGroup.Wait()
@@ -143,6 +148,7 @@ func bworker(thenum int, bdoc map[string]interface{}) {
 func main() {
 
 	rtr := mux.NewRouter()  //?.StrictSlash(true)
+	rtr.HandleFunc("/test", testit)
 	rtr.HandleFunc("/done", closeBucket)
 	rtr.HandleFunc("/POSTit/{id}/{doc}", postit) //?.Methods("POST")
 	rtr.HandleFunc("/GETit/{id}", getit) //?.Methods("GET")
