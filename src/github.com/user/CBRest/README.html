@@ -1,10 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Go Couchbase Rest Interface</title>
-</head>
-<body>
+
 Get airline 10 from travel-sample
 http://localhost:8888/GETit/airline_10
 
@@ -13,5 +7,9 @@ http://localhost:8888/POSTit/airline_XX/%7B%22callsign%22:%22MILE-AIR%22,%22coun
 
 Close the bucket and clean up
 http://localhost:8888/done
-</body>
-</html>
+
+Create multiple documents controlled by "number" variable
+http://localhost:8888/POSTbulk/
+
+Read for the documents created by the POSTbulk
+http://localhost:8888/GETbulk
